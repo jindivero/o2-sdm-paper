@@ -101,52 +101,21 @@ rmse_bc_cc$rmse_summary
 mod <- rmse_bc_cc$models$m_2011
 sim_resids <- simulate(mod, nsim = 500, type = "mle-mvn")
 dharma_residuals(sim_resids, mod)
-
-# Get fitted values from your model
-res_df <- data.frame(
-  fitted = predict(mod)$est,
-  residuals = residuals(mod, type = "pearson")
-)
-# Create the fitted vs residuals plot
-ggplot(res_df, aes(x = fitted, y = residuals)) +
-  geom_point(alpha = 0.5, color = "#1f77b4") +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red", size = 1) +
-  theme_minimal() +
-  labs(
-    x = "Fitted Values",
-    y = "Pearson Residuals",
-    title = "Fitted vs Residuals Plot"
-  )
-
 # print out the figure 
 rmse_bc_cc$figures$fig_2011
-
-# response curve
-# generate response curves by hand
-# generate a dataframe of all potential values setting other covariates to 
-# a fixed value
-preds <- preds_all[preds_all$year == 2011, ]
-d_pred <- rmse_bc_cc$predictions$preds_2011
-nd <- data.frame(depth_ln = seq(min(preds$depth_ln), 
-                                max(preds$depth_ln), 
-                                length.out = 250),
-                 month = as.factor(2)) # pick any factor level
-# predict to the new data
-p <- predict(mod,
-             newdata = nd,
-             se_fit = TRUE, # adds confidence intervals
-             re_form = ~ 0 # don't include spatial random fields
-)
-# reverse the quantile transformation
-p$est <- predict(bn, newdata = p$est, inverse = TRUE)
-p$est_sd <- predict(bn, newdata = p$est_sd, inverse = TRUE)
-
-# plot
-plot_resp_curve(p = p,
-                p_pred = depth_ln, 
-                d_pred = d_pred$depth,
-                xlab = "Depth")
-
+# Plot response curve
+# plot doesnt show shaded error ribbons because depths was fit with a smoother 
+# and random fields are turned off in the predict function to isolate the depth
+# effect 
+plot_depth_response(mod = mod,
+                    bn = bn,
+                    preds_all = preds_all,
+                    year = 2011,
+                    month_fixed = 2,
+                    n = 250,
+                    include_random_fields = FALSE)
+# save
+ggsave(paste0(root_dir, "output/plots/mom6_bc_cc_resp_curve_2011.pdf"))
 
 
 
@@ -158,6 +127,16 @@ dharma_residuals(sim_resids, mod)
 plot(sim_resids)
 # print out the figure 
 rmse_bc_cc$figures$fig_2012
+# Plot response curve
+plot_depth_response(mod = mod,
+                    bn = bn,
+                    preds_all = preds_all,
+                    year = 2012,
+                    month_fixed = 2,
+                    n = 250,
+                    include_random_fields = FALSE)
+# save
+ggsave(paste0(root_dir, "output/plots/mom6_bc_cc_resp_curve_2012.pdf"))
 
 
 ### 2013

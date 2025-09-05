@@ -209,6 +209,8 @@ mom6_fit <- function(dat,
     
     #Log depth
     region_dat$depth_ln <- log(region_dat$depth)
+    # preserve original o2 values
+    region_dat$o2_original <- region_dat$o2
     
     if(scale == TRUE){
       region_dat$o2 <- region_dat$o2/100
@@ -217,7 +219,7 @@ mom6_fit <- function(dat,
     if(quantile_transform == TRUE){
       # Apply ordered quantile normalization to o2 column
       bn <- orderNorm(region_dat$o2)
-      # Create transformed column
+      # transform o2 values
       region_dat$o2 <- predict(bn)
     }
     
@@ -227,12 +229,12 @@ mom6_fit <- function(dat,
     #Mesh
     spde <- make_mesh(data = region_dat,
                       xy_cols = c("X", "Y"),
-                      cutoff = 45)
+                      cutoff = 80)
     
     #Fit model
     print("fitting model")
     m <- try(sdmTMB(formula = o2 ~ 1 + 
-                      s(depth_ln) + 
+                      s(depth_ln, k = 3) + 
                       as.factor(month), 
                     mesh = spde,
                     data = region_dat,
@@ -729,25 +731,93 @@ convert_to_360 <- function(lon) {
 # ------------------------------------------------------------------------------
 # Plot response curve
 # ------------------------------------------------------------------------------
-# plot_resp_curve()
-plot_resp_curve <- function(p, p_pred, d_pred, xlab){
-  plot <- ggplot(p, aes(x = ({{p_pred}}*sd({{d_pred}})) + mean({{d_pred}}), 
-                        y = est,
-                        ymin = est - 1.96 * est_se, 
-                        ymax = est + 1.96 * est_se)) +
-    geom_line() + 
-    geom_ribbon(alpha = 0.4) + 
-    geom_vline(xintercept = min({{d_pred}}), 
-               color = "red",
-               lty = 2) +
-    geom_vline(xintercept = max({{d_pred}}), 
-               color = "red",
-               lty = 2) +
-    coord_cartesian(ylim = c(0, max(p$est)*1.5)) +
-    ylab("O2 (µmol/kg)") +
-    xlab(xlab) +
+plot_depth_response <- function(mod, 
+                                bn, 
+                                preds_all, 
+                                year = 2011, 
+                                month_fixed = 2,
+                                n = 250, 
+                                include_random_fields = FALSE) {
+  #' Plot Response Curve for Depth from sdmTMB Model
+  #'
+  #' Generates a response curve for the effect of depth from an `sdmTMB` model.
+  #' Handles quantile-transformed response variables, computes confidence intervals,
+  #' and converts depth back to meters for plotting. The function allows including or 
+  #' excluding spatial random field uncertainty.
+  #'
+  #' @param mod An `sdmTMB` model object.
+  #' @param bn A `bestNormalize` object used to inverse-transform model predictions 
+  #'   back to the original scale.
+  #' @param preds_all A data frame containing predictions and covariates, including
+  #'   `depth_ln` and `year`.
+  #' @param year Numeric. Year to subset from `preds_all` for observed depth range. Default = `2011`.
+  #' @param month_fixed Integer or factor. Month to hold constant when generating predictions. Default = `2`.
+  #' @param n Integer. Number of prediction points along the depth gradient. Default = `250`.
+  #' @param include_random_fields Logical. If `TRUE`, includes spatial random field variability
+  #'   in the predictions and confidence intervals. Default = `FALSE`.
+  #'
+  #' @return A `ggplot` object showing the response curve, with a line for the predicted mean and a ribbon
+  #'   representing 95% confidence intervals.
+  #'
+  #' @details
+  #' This function:
+  #'   1. Generates a sequence of `depth_ln` values,
+  #'   2. Predicts responses using the fitted `sdmTMB` model,
+  #'   3. Back-transforms estimates from a quantile-normalized scale (if applicable),
+  #'   4. Converts log-transformed depth back to meters,
+  #'   5. Produces a response curve plot.
+  #'
+  #' @examples
+  #' \dontrun{
+  #' plot_depth_response(
+  #'   mod = mod,
+  #'   bn = bn,
+  #'   preds_all = preds_all,
+  #'   year = 2011,
+  #'   month_fixed = 2,
+  #'   include_random_fields = FALSE
+  #' )
+  #' }
+  #'
+  
+  # 1. Filter test data for selected year
+  preds <- preds_all %>% filter(year == year)
+  
+  # 2. Create a depth prediction grid (log-scaled depth)
+  nd <- data.frame(
+    depth_ln = seq(min(preds$depth_ln, na.rm = TRUE),
+                   max(preds$depth_ln, na.rm = TRUE),
+                   length.out = n),
+    month = factor(month_fixed)
+  )
+  
+  # 3. Predict with or without random fields
+  if (include_random_fields) {
+    p <- predict(mod, newdata = nd, se_fit = TRUE)
+  } else {
+    p <- predict(mod, newdata = nd, se_fit = TRUE, re_form = ~0)
+  }
+  
+  # 4. Back-transform predictions and SEs from quantile-transformed scale
+  p$est <- predict(bn, newdata = p$est, inverse = TRUE)
+  
+  # Calculate upper/lower bounds on transformed scale, THEN back-transform
+  est_lo <- p$est - 1.96 * p$est_se
+  est_hi <- p$est + 1.96 * p$est_se
+  p$est_lo <- predict(bn, newdata = est_lo, inverse = TRUE)
+  p$est_hi <- predict(bn, newdata = est_hi, inverse = TRUE)
+  
+  # 5. Convert log depth back to meters
+  p$depth <- exp(p$depth_ln)
+  
+  # 6. Generate response curve plot
+  ggplot(p, aes(x = depth, y = est)) +
+    geom_ribbon(aes(ymin = est_lo, ymax = est_hi), alpha = 0.3) +
+    geom_line(size = 1.1) +
+    # geom_vline(xintercept = min(preds$depth, na.rm = TRUE), color = "red", lty = 2) +
+    # geom_vline(xintercept = max(preds$depth, na.rm = TRUE), color = "red", lty = 2) +
+    ylab(expression(O[2]~"(µmol/kg)")) +
+    xlab("Depth (m)") +
     ggsidekick::theme_sleek()
-  plot
 }
-# END plot_resp_curve()
 

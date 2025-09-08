@@ -169,7 +169,8 @@ mom6_fit <- function(dat,
                      test_region,
                      root_dir,
                      scale,
-                     transform){
+                     transform,
+                     barrier_mesh = FALSE){
   ##Set up data
   #Filter to region
   dat.2.use <- as.data.frame(filter(dat, region==test_region))
@@ -237,8 +238,9 @@ mom6_fit <- function(dat,
     ### Scale
     if(scale == TRUE && transform != "squared"){
       region_dat$o2 <- region_dat$o2/100
-    }else{
-      region_dat$o2 <- region_dat$o2/100000
+    }
+    if(scale == TRUE && transform == "squared"){
+      region_dat$o2 <- region_dat$o2/100000 
     }
 
     
@@ -246,21 +248,26 @@ mom6_fit <- function(dat,
       drop_na(depth, o2, month, X, Y)
     
     #Mesh
-    spde <- make_mesh(data = region_dat,
-                      xy_cols = c("X", "Y"),
-                      cutoff = 45)
+    spde <- make_mesh(
+      data = region_dat,
+      xy_cols = c("X", "Y"),
+      cutoff = 45)
+    if(barrier_mesh){
+      spde <- add_barrier_mesh(spde,
+                               barrier_sf = us_coast_km)
+    }
     
     #Fit model
     print("fitting model")
     m <- try(sdmTMB(formula = o2 ~ 1 + 
-                      s(depth_ln, k = 3),
-                      # as.factor(month), 
+                      s(depth_ln, k = 3) +
+                      as.factor(month),
                     mesh = spde,
                     data = region_dat,
                     family = gaussian(),
                     spatial = "on",
                     spatiotemporal  = "off",
-                    anisotropy = TRUE))
+                    anisotropy = FALSE))
     
     # Store model in list with year-specific name
     models[[paste0("m_", test_year)]] <- m
@@ -272,9 +279,10 @@ mom6_fit <- function(dat,
     if(scale == TRUE && transform != "squared"){
       test_predict_O2$est <- test_predict_O2$est*100
       test_predict_O2$o2 <- test_predict_O2$o2*100
-    }else{
+    }
+    if(scale == TRUE && transform == "squared"){
       test_predict_O2$est <- test_predict_O2$est*100000
-      test_predict_O2$o2 <- test_predict_O2$o2*100000
+      test_predict_O2$o2 <- test_predict_O2$o2*100000 
     }
     if(transform == "quantile"){
       # save transformed data for response curve plotting 
@@ -283,7 +291,6 @@ mom6_fit <- function(dat,
       # reverse transformation for estimated o2 values
       test_predict_O2$est <- predict(bn, newdata = test_predict_O2$est, inverse = TRUE)
       # test_predict_O2$est_non_rf <- predict(bn, newdata = test_predict_O2$est_non_rf, inverse = TRUE)
-      
     }
     if(transform == "squared"){
       test_predict_O2$est <- sqrt(test_predict_O2$est)

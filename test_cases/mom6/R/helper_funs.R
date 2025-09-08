@@ -169,7 +169,7 @@ mom6_fit <- function(dat,
                      test_region,
                      root_dir,
                      scale,
-                     quantile_transform){
+                     transform){
   ##Set up data
   #Filter to region
   dat.2.use <- as.data.frame(filter(dat, region==test_region))
@@ -191,12 +191,23 @@ mom6_fit <- function(dat,
     print(test_year)
     test_data <- dat.2.use %>%
       filter(year==test_year)
+    
+    # # monthly model
+    # test_data <- dat.2.use %>%
+    #   filter(month==8)
+    
     ## Load MOM6 data
     mom6 <- readRDS(paste0(root_dir, "data/mom6/o2_df_", test_year, ".rds"))
     # remove rows with depth > 500 m
     mom6 <- mom6[mom6$depth <= 500, ]
     # remove negative o2 values
     mom6 <- mom6[mom6$o2 >= 0, ]
+    
+    # # only include survey months
+    # mom6 <- mom6[mom6$month %in% unique(test_data$month), ]
+    
+    # # monthly model
+    # mom6 <- mom6[mom6$month == 8, ]
     
     ##Pull in survey extent polygons
     # Regional polygon
@@ -212,16 +223,24 @@ mom6_fit <- function(dat,
     # preserve original o2 values
     region_dat$o2_original <- region_dat$o2
     
-    if(scale == TRUE){
-      region_dat$o2 <- region_dat$o2/100
+    ### Apply transformations
+    if(transform == "squared"){
+      region_dat$o2 <- region_dat$o2^2
     }
-    
-    if(quantile_transform == TRUE){
+    if(transform == "quantile"){
       # Apply ordered quantile normalization to o2 column
       bn <- orderNorm(region_dat$o2)
       # transform o2 values
       region_dat$o2 <- predict(bn)
     }
+    
+    ### Scale
+    if(scale == TRUE && transform != "squared"){
+      region_dat$o2 <- region_dat$o2/100
+    }else{
+      region_dat$o2 <- region_dat$o2/100000
+    }
+
     
     region_dat <- region_dat %>%
       drop_na(depth, o2, month, X, Y)
@@ -229,18 +248,19 @@ mom6_fit <- function(dat,
     #Mesh
     spde <- make_mesh(data = region_dat,
                       xy_cols = c("X", "Y"),
-                      cutoff = 80)
+                      cutoff = 45)
     
     #Fit model
     print("fitting model")
     m <- try(sdmTMB(formula = o2 ~ 1 + 
-                      s(depth_ln, k = 3) + 
-                      as.factor(month), 
+                      s(depth_ln, k = 3),
+                      # as.factor(month), 
                     mesh = spde,
                     data = region_dat,
                     family = gaussian(),
                     spatial = "on",
-                    spatiotemporal  = "off"))
+                    spatiotemporal  = "off",
+                    anisotropy = TRUE))
     
     # Store model in list with year-specific name
     models[[paste0("m_", test_year)]] <- m
@@ -249,20 +269,26 @@ mom6_fit <- function(dat,
     #Predict
     test_predict_O2 <- try(predict(m, newdata = test_data))
     #Re-scale
-    if(scale==T){
+    if(scale == TRUE && transform != "squared"){
       test_predict_O2$est <- test_predict_O2$est*100
       test_predict_O2$o2 <- test_predict_O2$o2*100
+    }else{
+      test_predict_O2$est <- test_predict_O2$est*100000
+      test_predict_O2$o2 <- test_predict_O2$o2*100000
     }
-    if(quantile_transform == TRUE){
+    if(transform == "quantile"){
       # save transformed data for response curve plotting 
       test_predict_O2$est_transformed <- test_predict_O2$est
       # test_predict_O2$est_non_rf_transformed <- test_predict_O2$est_non_rf
-      
       # reverse transformation for estimated o2 values
       test_predict_O2$est <- predict(bn, newdata = test_predict_O2$est, inverse = TRUE)
       # test_predict_O2$est_non_rf <- predict(bn, newdata = test_predict_O2$est_non_rf, inverse = TRUE)
       
     }
+    if(transform == "squared"){
+      test_predict_O2$est <- sqrt(test_predict_O2$est)
+    }
+    
     #Residuals
     test_predict_O2$residual = try(test_predict_O2$o2 - (test_predict_O2$est))
     # Store predictions in list with year-specific name

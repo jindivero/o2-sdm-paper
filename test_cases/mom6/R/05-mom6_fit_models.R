@@ -81,7 +81,7 @@ rmse_bc_cc <- mom6_fit(dat = dat,
                        test_region = "bc_cc", 
                        root_dir = root_dir,
                        scale = FALSE,
-                       quantile_transform = TRUE)
+                       transform = "quantile")
 
 # ------------------------------------------------------------------------------
 # look at results

@@ -91,6 +91,8 @@ Then we prepare the MOM6 data for analysis. Here we grab 3D MOM6 oxygen output f
 
 We start our exploration by conducting a simple nearest neighbor analysis to evaluate how well the raw MOM6 output matches the in situ data. MOM6 data are interpolated using bilinear interpolation between spatial point (lat, lon), and linear interpolation between depths.
 
+### Initial data checks
+
 ```{r}
 #| echo: false
 #| warning: false
@@ -140,22 +142,6 @@ p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 ```{r}
 #| echo: false
 
-
-# Calculate RMSE by year
-nn %>%
-  group_by(year) %>%
-  summarise(
-    rmse = rmse(o2, o2_nn_interp)
-  )
-
-# Calculate total RMSE 
-rmse(nn$o2, nn$o2_nn_interp)
-
-```
-
-```{r}
-#| echo: false
-
 # create 1:1 plot of predicted and observed
 ggplot(data = nn, aes(x = o2, y = o2_nn_interp, col = depth)) +
           geom_point() +
@@ -163,7 +149,7 @@ ggplot(data = nn, aes(x = o2, y = o2_nn_interp, col = depth)) +
           name = "Depth") +
           theme(legend.position = "bottom") +
           plot_theme +
-          labs(x = "Observed (in situ CTD)", y = "Predicted (MOM6 output") +
+          labs(x = "In situ (CTD)", y = "MOM6 o2") +
           geom_abline(intercept = 0, slope = 1)+
           theme(legend.position="bottom")
 
@@ -178,7 +164,7 @@ nn$resids <- nn$o2 - nn$o2_nn_interp
 # plot
 ggplot(data = nn, aes(x = (o2_nn_interp), y = resids, col = depth)) +
     geom_point() +
-    labs(x = "MOM6 o2 output", y = "Residuals (in situ - MOM6") +
+    labs(x = "MOM6 o2", y = "Residuals (in situ - MOM6") +
     plot_theme +
     scale_colour_gradientn(colours = brewer.pal(9, "Blues")[3:9],  
           name = "Depth") +
@@ -192,7 +178,8 @@ ggplot(data = nn, aes(x = (o2_nn_interp), y = resids, col = depth)) +
 # plot oxygen by depth
 ggplot(data = nn, aes(x = (o2_nn_interp), y = depth)) +
     geom_point(alpha = 0.1) +
-    labs(x = "MOM6 o2 output", y = "Depth") +
+    labs(x = "MOM6 o2", y = "Depth") +
+    scale_y_reverse() +
     plot_theme +
     theme(legend.position = "none") 
 
@@ -293,6 +280,84 @@ p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom
 
 ```
 
+### RMSE results
+
+#### All data
+
+```{r}
+#| echo: false
+
+# Calculate RMSE by year
+nn %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, o2_nn_interp)
+  )
+
+# Calculate total RMSE 
+rmse(nn$o2, nn$o2_nn_interp)
+```
+
+#### Hake upper tolerance (o2 \< 119 µm/kg)
+
+Let's narrow the range of values to include only o2 values where hake start showing altered behavior or distribution due to low oxygen (Moriarty et al., 2020). In theory, large oxygen values need to be less precise because they won't influence distribution (i.e., we only need precise o2 estimates at lower values when oxygen influences distribution).
+
+```{r}
+#| echo: false
+
+### look at hypoxic zones (Barth et al., 2024) ###
+nn_hypoxic <- nn[nn$o2 <= 119, ]
+# Calculate RMSE by year
+nn_hypoxic %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, o2_nn_interp)
+  )
+# Calculate total RMSE 
+rmse(nn_hypoxic$o2, nn_hypoxic$o2_nn_interp)
+
+```
+
+#### Hake habitat (100-500 m)
+
+Next let's see how well oxygen values are predicted within hake habitat.
+
+```{r}
+#| echo: false
+
+### look at hake habitat ###
+nn_habitat <- nn[nn$depth > 100 & nn$depth < 500, ]
+# Calculate RMSE by year
+nn_habitat %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, o2_nn_interp)
+  )
+# Calculate total RMSE 
+rmse(nn_habitat$o2, nn_habitat$o2_nn_interp)
+
+```
+
+#### Upper tolerance within hake habitat (o2 \< 119 µm/kg between 100-500 m)
+
+And finally, let's see how well o2 values within the upper tolerance are estimated in hake habitat.
+
+```{r}
+#| echo: false
+
+### look at hypoxic zones in hake habitat ###
+nn_hh <- nn_habitat[nn_habitat$o2 <= 119, ]
+# Calculate RMSE by year
+nn_hh %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, o2_nn_interp)
+  )
+# Calculate total RMSE 
+rmse(nn_hh$o2, nn_hh$o2_nn_interp)
+
+```
+
 ## Skill Testing Analysis
 
 Then we conduct an analysis following methodology from Indivero et al., 2025 to improve the skill of the MOM6 output. Here, we extract MOM6 values at all vertical levels shallower than 500 m within a specified region (e.g., bc_cc, bc, or cc), fit a spatial model to the extracted MOM6 data, predict back to the location and depth of the in situ data, and calculate RMSE to evaluate skill.
@@ -301,6 +366,9 @@ Then we conduct an analysis following methodology from Indivero et al., 2025 to 
 
 ```{r}
 #| echo: false
+
+# load(here::here("test_cases/mom6/output/o2_models/bc_cc.RData"))
+# region_dat2 <- output[[1]]$mom6_data
 
 region_dat <- read_rds(file = here::here("test_cases/mom6/data/mom6/mom6_bc_cc.rds"))
 # restrict to < 500 m (hake habitat)
@@ -320,6 +388,7 @@ region_dat$latitude  <- coords[, 2]
 ggplot(data = region_dat, aes(x = o2, y = depth)) +
     geom_point(alpha = 0.1) +
     labs(x = "MOM6 o2", y = "Depth") +
+    scale_y_reverse() +
     plot_theme +
     theme(legend.position = "none") 
 
@@ -327,6 +396,8 @@ ggplot(data = region_dat, aes(x = o2, y = depth)) +
 
 ```{r}
 #| echo: false
+#| message: false
+#| warning: false
 
 # calculate mean o2 by location- MOM6
 o2_by_location_mom6 <- region_dat %>%
@@ -376,8 +447,8 @@ p1 <- ggplot(nn, aes(x = o2)) +
 p2 <- ggplot(region_dat, aes(x = o2)) +
   geom_histogram(bins = 30, alpha = 0.6, position = "identity") +
   scale_fill_viridis_d() +
-  scale_x_continuous(limits = o2_range) + 
-  # scale_y_continuous(limits = c(0, 10000)) + 
+  scale_x_continuous(limits = o2_range) +
+  # scale_y_continuous(limits = c(0, 10000)) +
   plot_theme +
   labs(
     title = "MOM6",
@@ -419,6 +490,12 @@ ggplot(region_dat, aes(x = o2_transformed)) +
 
 ### Fit GLMM to MOM6 output and calculate RMSE
 
+Model structures tested:
+
+### RMSE results
+
+#### All data
+
 ```{r}
 #| echo: false
 
@@ -431,12 +508,74 @@ rmse
 
 ```
 
-#### 2011 Results
+#### Hake upper tolerance (o2 \< 119 µm/kg)
+
+Again, we narrow the range of values to include only o2 values where hake start showing altered behavior or distribution due to low oxygen (Moriarty et al., 2020)...
 
 ```{r}
 #| echo: false
 
 load(here::here("test_cases/mom6/output/o2_models/bc_cc.RData"))
+# combine all years of predictions
+skill_preds <- rbind(output[[1]]$predictions,
+                     output[[2]]$predictions,
+                     output[[3]]$predictions,
+                     output[[4]]$predictions)
+
+### look at hypoxic zones ###
+skill_hypoxic <- skill_preds[skill_preds$o2 <= 119, ]
+# Calculate RMSE by year
+skill_hypoxic %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, est)
+  )
+# Calculate total RMSE 
+rmse(skill_hypoxic$o2, skill_hypoxic$est)
+```
+
+#### Hake habitat (100-500 m)
+
+...and see how well oxygen values are predicted within hake habitat...
+
+```{r}
+#| echo: false
+
+### look at hypoxic zones ###
+skill_habitat <- skill_preds[skill_preds$depth > 100 & skill_preds$depth < 500, ]
+# Calculate RMSE by year
+skill_habitat %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, est)
+  )
+# Calculate total RMSE 
+rmse(skill_habitat$o2, skill_habitat$est)
+```
+
+#### Upper tolerance within hake habitat (o2 \< 119 µm/kg between 100-500 m)
+
+...and finally, let's see how well o2 values within the upper tolerance are estimated in hake habitat.
+
+```{r}
+#| echo: false
+
+skill_hh <- skill_habitat[skill_habitat$o2 <= 119, ]
+# Calculate RMSE by year
+skill_hh %>%
+  group_by(year) %>%
+  summarise(
+    rmse = rmse(o2, est)
+  )
+# Calculate total RMSE 
+rmse(skill_hh$o2, skill_hh$est)
+
+```
+
+### 2011 Results
+
+```{r}
+#| echo: false
 
 dat <- output[[1]]$predictions
 
@@ -444,12 +583,15 @@ dat <- output[[1]]$predictions
 ggplot(data = dat, aes(x = est, y = depth)) +
     geom_point(alpha = 0.1) +
     labs(x = "Predicted o2", y = "Depth") +
+    scale_y_reverse() +
     plot_theme +
     theme(legend.position = "none") 
 ```
 
 ```{r}
 #| echo: false
+#| message: false
+#| warning: false
 
 # calculate mean o2 by location- in situ
 o2_by_location <- dat %>%
@@ -504,13 +646,13 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean predicted O2 Values") +
   scale_color_viridis(option = "viridis", limits = o2_range, name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(size = 10))
 
-# Third plot: Difference (MOM6 - In Situ)
+# Third plot: Difference (in situ - predicted)
 p3 <- ggplot(o2_diff) +
   geom_sf(data = namerica_state_wgs_df,
           fill = NA, color = "grey10", size = 0.2) +
@@ -520,7 +662,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - predicted", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -535,6 +677,12 @@ p3 <- ggplot(o2_diff) +
 # Combine plots side by side with shared legend
 p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
 
-
-
 ```
+
+## Conclusions
+
+The nearest neighbor analysis performed slightly better for all the data combined (RMSE = 37.61 vs. 41.62) but slightly worse when we narrowed the RMSE calculations to include only oxygen values that can influence hake distribution within hake habitat (RMSE = 25.75 vs. 23.35). RMSE values of 15-20 are considered within an acceptable range (Indivero pers. communication, 2025-08-22).
+
+-   shallower areas have high oxygen values so less important to be precise
+
+-   want more precision within hake habitat, specifically for our model- 250-300 m

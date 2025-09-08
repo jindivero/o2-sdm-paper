@@ -27,6 +27,8 @@ library(tidync)
 library(marmap)
 library(bestNormalize)
 library(readr)
+# remotes::install_github("pbs-assess/sdmTMBextra", dependencies = TRUE)
+library(sdmTMBextra)
 
 # set root directory
 root_dir <- "test_cases/mom6/"
@@ -45,6 +47,17 @@ map_data <- rnaturalearth::ne_countries(scale = "large",
                                         continent = "North America")
 
 us_coast_proj <- sf::st_transform(map_data, crs = 32610)
+
+# for barrier mesh
+# crop to study area
+# Define bounding box (xmin, ymin, xmax, ymax)
+bbox <- st_bbox(c(xmin = -135, ymin = 30, xmax = -115, ymax = 55), crs = st_crs(map_data))
+map_cropped <- st_crop(map_data, bbox)
+us_coast_km <- map_cropped
+us_coast_km <- sf::st_transform(us_coast_km, crs = 32610)
+# conver to km
+st_geometry(us_coast_km) <- st_geometry(us_coast_km) / 1000
+
 
 #Load oxygen data
 dat <- readRDS(paste0(root_dir, "data/all_o2_dat_region.rds"))
@@ -81,7 +94,8 @@ rmse_bc_cc <- mom6_fit(dat = dat,
                        test_region = "bc_cc", 
                        root_dir = root_dir,
                        scale = FALSE,
-                       transform = "quantile")
+                       transform = "quantile",
+                       barrier_mesh = TRUE)
 
 # ------------------------------------------------------------------------------
 # look at results

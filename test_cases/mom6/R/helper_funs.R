@@ -589,8 +589,7 @@ add_mom6 <- function(df,
   #' Adds variable values (e.g., SST) from a MOM6 NetCDF output list 
   #' (produced by `get_mom6()`) to a dataframe by spatially interpolating values
   #' at the observation locations and matching by date. If 3D, averages over depth
-  #' layers before interpolation and fills in NAs using values at the next 
-  #' deepest depth layer. If 2D, fills in NAs using the nearest non-NA cell
+  #' layers before interpolation. If 2D, fills in NAs using the nearest non-NA cell
   #' via `get_nearest_non_na()`.
   #'
   #' @param df A dataframe with at least columns `lon_360`, `lat`, and `date`
@@ -765,7 +764,9 @@ convert_to_360 <- function(lon) {
 # Plot response curve
 # ------------------------------------------------------------------------------
 plot_depth_response <- function(mod, 
-                                bn, 
+                                transform,
+                                scale,
+                                bn = NULL, 
                                 preds_all, 
                                 year = 2011, 
                                 month_fixed = 2,
@@ -779,8 +780,10 @@ plot_depth_response <- function(mod,
   #' excluding spatial random field uncertainty.
   #'
   #' @param mod An `sdmTMB` model object.
+  #' @param transform The type of transformation using on the response variable.
+  #' @param scale If the response was scaled or not (TRUE or FALSE).
   #' @param bn A `bestNormalize` object used to inverse-transform model predictions 
-  #'   back to the original scale.
+  #'   back to the original scale for quantile transformations. Default set to NULL.
   #' @param preds_all A data frame containing predictions and covariates, including
   #'   `depth_ln` and `year`.
   #' @param year Numeric. Year to subset from `preds_all` for observed depth range. Default = `2011`.
@@ -831,14 +834,30 @@ plot_depth_response <- function(mod,
     p <- predict(mod, newdata = nd, se_fit = TRUE, re_form = ~0)
   }
   
-  # 4. Back-transform predictions and SEs from quantile-transformed scale
-  p$est <- predict(bn, newdata = p$est, inverse = TRUE)
+  if(transform == "quantile"){
+    # 4. Back-transform predictions and SEs from quantile-transformed scale
+    p$est <- predict(bn, newdata = p$est, inverse = TRUE) 
+  }
+  
+  if(scale == TRUE){
+    # 4. Re-scale
+    p$est <- p$est*100
+    p$est_se <- p$est_se*100
+    # p$o2 <- p$o2*100
+  }
+ 
   
   # Calculate upper/lower bounds on transformed scale, THEN back-transform
   est_lo <- p$est - 1.96 * p$est_se
   est_hi <- p$est + 1.96 * p$est_se
-  p$est_lo <- predict(bn, newdata = est_lo, inverse = TRUE)
-  p$est_hi <- predict(bn, newdata = est_hi, inverse = TRUE)
+  if(transform == "quantile"){
+    p$est_lo <- predict(bn, newdata = est_lo, inverse = TRUE)
+    p$est_hi <- predict(bn, newdata = est_hi, inverse = TRUE)
+  }else{
+    p$est_lo <- est_lo
+    p$est_hi <- est_hi
+  }
+  
   
   # 5. Convert log depth back to meters
   p$depth <- exp(p$depth_ln)

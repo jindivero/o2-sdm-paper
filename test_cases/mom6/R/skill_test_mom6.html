@@ -22,7 +22,27 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="skill_test_mom6_files/libs/clipboard/clipboard.min.js"></script>
@@ -72,12 +92,26 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#create-region-polygons-and-add-noaa-bathymetry" id="toc-create-region-polygons-and-add-noaa-bathymetry" class="nav-link" data-scroll-target="#create-region-polygons-and-add-noaa-bathymetry">Create region polygons and add NOAA bathymetry</a></li>
   <li><a href="#prepare-mom6-data" id="toc-prepare-mom6-data" class="nav-link" data-scroll-target="#prepare-mom6-data">Prepare MOM6 data</a></li>
   </ul></li>
-  <li><a href="#nearest-neighbor-analysis" id="toc-nearest-neighbor-analysis" class="nav-link" data-scroll-target="#nearest-neighbor-analysis">Nearest Neighbor Analysis</a></li>
-  <li><a href="#skill-testing-analysis" id="toc-skill-testing-analysis" class="nav-link" data-scroll-target="#skill-testing-analysis">Skill Testing Analysis</a>
+  <li><a href="#nearest-neighbor-analysis" id="toc-nearest-neighbor-analysis" class="nav-link" data-scroll-target="#nearest-neighbor-analysis">Nearest Neighbor Analysis</a>
   <ul class="collapse">
   <li><a href="#initial-data-checks" id="toc-initial-data-checks" class="nav-link" data-scroll-target="#initial-data-checks">Initial data checks</a></li>
-  <li><a href="#fit-glmm-to-mom6-output-and-calculate-rmse" id="toc-fit-glmm-to-mom6-output-and-calculate-rmse" class="nav-link" data-scroll-target="#fit-glmm-to-mom6-output-and-calculate-rmse">Fit GLMM to MOM6 output and calculate RMSE</a></li>
+  <li><a href="#rmse-results" id="toc-rmse-results" class="nav-link" data-scroll-target="#rmse-results">RMSE results</a></li>
   </ul></li>
+  <li><a href="#indivero-analysis" id="toc-indivero-analysis" class="nav-link" data-scroll-target="#indivero-analysis">Indivero Analysis</a>
+  <ul class="collapse">
+  <li><a href="#initial-data-checks-before-model-fitting" id="toc-initial-data-checks-before-model-fitting" class="nav-link" data-scroll-target="#initial-data-checks-before-model-fitting">Initial data checks before model fitting</a></li>
+  <li><a href="#model-structure" id="toc-model-structure" class="nav-link" data-scroll-target="#model-structure">Model structure</a></li>
+  <li><a href="#rmse-results-1" id="toc-rmse-results-1" class="nav-link" data-scroll-target="#rmse-results-1">RMSE results</a></li>
+  </ul></li>
+  <li><a href="#temporal-trends" id="toc-temporal-trends" class="nav-link" data-scroll-target="#temporal-trends">Temporal trends</a></li>
+  <li><a href="#anomalies" id="toc-anomalies" class="nav-link" data-scroll-target="#anomalies">Anomalies</a></li>
+  <li><a href="#confusion-matrix" id="toc-confusion-matrix" class="nav-link" data-scroll-target="#confusion-matrix">Confusion matrix</a>
+  <ul class="collapse">
+  <li><a href="#indivero-method" id="toc-indivero-method" class="nav-link" data-scroll-target="#indivero-method">Indivero method</a></li>
+  <li><a href="#nearest-neighbor-method" id="toc-nearest-neighbor-method" class="nav-link" data-scroll-target="#nearest-neighbor-method">Nearest neighbor method</a></li>
+  </ul></li>
+  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
   </ul>
 </nav>
 </div>
@@ -116,10 +150,11 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="purpose" class="level2">
 <h2 class="anchored" data-anchor-id="purpose">Purpose</h2>
-<p>There is a lack of environmental data—particularly dissolved oxygen—at the same temporal and spatial resolution as biological data, which can limit species distribution analyses. Estimates from oceanographic models can be used in place of direct in situ data, but their ability to accurately represent in situ data remains untested. Here, we skill test 3D MOM6 oxygen data outputs against in situ <a href="https://www.fisheries.noaa.gov/west-coast/science-data/oceanographic-and-ecosystem-sampling-during-pacific-hake-survey#measuring-conductivity-temperature-and-depth">CTD data</a> collected during the Joint U.S.-Canada Pacific Hake Acoustic Trawl Survey following two methods:</p>
+<p>There is a lack of environmental data—particularly dissolved oxygen—at the same temporal and spatial resolution as biological data, which can limit species distribution analyses. Estimates from oceanographic models can be used in place of direct in situ data, but their ability to accurately represent in situ data remains untested. Here, we skill test 3D MOM6 oxygen data outputs against in situ <a href="https://www.fisheries.noaa.gov/west-coast/science-data/oceanographic-and-ecosystem-sampling-during-pacific-hake-survey#measuring-conductivity-temperature-and-depth">CTD data</a> collected during the Joint U.S.-Canada Pacific Hake Acoustic Trawl Survey following three methods:</p>
 <ol type="1">
-<li><p>A simple nearest neighbour analysis</p></li>
-<li><p>Methodology from Indivero et al., 2025</p></li>
+<li><p>A nearest neighbour analysis</p></li>
+<li><p>Methodology from <span class="citation" data-cites="indivero2025">Indivero et al. (<a href="#ref-indivero2025" role="doc-biblioref">2025</a>)</span></p></li>
+<li><p>A binary confusion matrix analysis</p></li>
 </ol>
 <p>Using these methods, we evaluate the validity of MOM6 oxygen outputs for use in age-structured short-term forecasts of Pacific hake.</p>
 </section>
@@ -155,8 +190,8 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 <p>Next, we create region polygons and add NOAA bathymetry data for model fitting later. We create separate regions for British Columbia and the California Current but we will be focusing on the combined region that includes both areas (i.e., “bc_cc”) for this anaylsis. We also restrict the dataset to depths less than 500 m because the CTD casts only go that deep. See 02-estimate_depths_by_region.R for code.</p>
 <div class="cell">
 <div class="cell-output-display">
-<div class="leaflet html-widget html-fill-item" id="htmlwidget-70320adf38ad02298b61" style="width:100%;height:464px;"></div>
-<script type="application/json" data-for="htmlwidget-70320adf38ad02298b61">{"x":{"options":{"minZoom":1,"maxZoom":52,"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}},"preferCanvas":false,"bounceAtZoomLimits":false,"maxBounds":[[[-90,-370]],[[90,370]]]},"calls":[{"method":"addProviderTiles","args":["CartoDB.Positron","CartoDB.Positron","CartoDB.Positron",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["CartoDB.DarkMatter","CartoDB.DarkMatter","CartoDB.DarkMatter",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["OpenStreetMap","OpenStreetMap","OpenStreetMap",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["Esri.WorldImagery","Esri.WorldImagery","Esri.WorldImagery",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["OpenTopoMap","OpenTopoMap","OpenTopoMap",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"createMapPane","args":["polygon",420]},{"method":"addPolygons","args":[[[[{"lng":[-122.1915,-121.10365,-121.160375,-121.330575,-122.410975,-123.8957,-124.12465,-126.478,-126.880675,-127.7441,-129.414475,-130.911625,-131.602,-131.94695,-133.840475,-133.955,-133.268125,-122.3387,-122.1915],"lat":[47.728175,54.533475,54.5372,54.5482,54.612175,54.6841,54.69355000000001,54.76545,54.77315,54.78515000000001,54.79095,54.77660000000001,54.76375000000001,54.75585000000001,54.69495000000001,54.690275,47.85115,47.736825,47.728175]}]],[[{"lng":[-125.2244784,-123.5003905,-121.0702967,-121.0491195,-120.1399656,-119.8042082,-119.5740264,-118.1369976,-117.2232165,-117.2011209,-117.1967235,-117.2233712,-117.2411555,-117.2785578,-124.6655327,-124.6947502,-124.721796,-124.7488408,-124.7758844,-124.8029269,-124.8299684,-124.8570086,-124.8840478,-124.9110858,-124.9381227,-124.9651584,-124.9921929,-125.0192262,-125.0462584,-125.0732893,-125.1531176,-125.9416066,-126.0711168,-126.0947852,-126.1904079,-126.1841106,-125.2244784],"lat":[40.23038491,37.29926258,33.00490776,32.96874962,32.31227434,32.10959134,31.9798978,31.94880708,32.49697727,32.51421771,32.60412496,32.92927945999999,33.00195115,33.11132893,48.50765351,48.54284845,48.54211757000001,48.54138034,48.54063677,48.53988686,48.5391306,48.538368,48.53759906,48.53682378,48.53604215000001,48.53525419,48.53445988999999,48.53365925,48.53285227,48.53203896,48.51161009,48.23263839,48.17368733000001,48.13677683,47.70114972,47.62942761,40.23038491]}]],[[{"lng":[-117.2232165,-117.2011209,-117.1967235,-117.2233712,-121.10365,-121.160375,-121.330575,-122.410975,-123.8957,-124.12465,-126.478,-126.880675,-127.7441,-129.414475,-130.911625,-131.602,-131.94695,-133.840475,-133.955,-133.268125,-121.0491195,-120.1399656,-119.8042082,-119.5740264,-118.1369976,-117.2232165],"lat":[32.49697727,32.51421771,32.60412496,32.92927945999999,54.533475,54.5372,54.5482,54.612175,54.6841,54.69355000000001,54.76545,54.77315,54.78515000000001,54.79095,54.77660000000001,54.76375000000001,54.75585000000001,54.69495000000001,54.690275,47.85115,32.96874962,32.31227434,32.10959134,31.9798978,31.94880708,32.49697727]}]]],null,"regions.hull",{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}},"pane":"polygon","stroke":true,"color":"#333333","weight":0.5,"opacity":[0.9,0.9,0.9],"fill":true,"fillColor":["#4B0055","#FDE333","#009B95"],"fillOpacity":[0.6,0.6,0.6],"smoothFactor":1,"noClip":false},["<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>1&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>bc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>","<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>2&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>cc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>","<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>3&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>bc_cc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>"],{"maxWidth":800,"minWidth":50,"autoPan":true,"keepInView":false,"closeButton":true,"closeOnClick":true,"className":""},["bc","cc","bc_cc"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},{"stroke":true,"weight":1,"opacity":0.9,"fillOpacity":0.84,"bringToFront":false,"sendToBack":false}]},{"method":"addScaleBar","args":[{"maxWidth":100,"metric":true,"imperial":true,"updateWhenIdle":true,"position":"bottomleft"}]},{"method":"addHomeButton","args":[-133.955,31.94880708,-117.1967235,54.79095,true,"regions.hull","Zoom to regions.hull","<strong> regions.hull <\/strong>","bottomright"]},{"method":"addLayersControl","args":[["CartoDB.Positron","CartoDB.DarkMatter","OpenStreetMap","Esri.WorldImagery","OpenTopoMap"],"regions.hull",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]},{"method":"addLegend","args":[{"colors":["#4B0055","#009B95","#FDE333"],"labels":["bc","bc_cc","cc"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"factor","title":"regions.hull","extra":null,"layerId":null,"className":"info legend","group":"regions.hull"}]}],"limits":{"lat":[31.94880708,54.79095],"lng":[-133.955,-117.1967235]},"fitBounds":[31.94880708,-133.955,54.79095,-117.1967235,[]]},"evals":[],"jsHooks":{"render":[{"code":"function(el, x, data) {\n  return (\n      function(el, x, data) {\n      // get the leaflet map\n      var map = this; //HTMLWidgets.find('#' + el.id);\n      // we need a new div element because we have to handle\n      // the mouseover output separately\n      // debugger;\n      function addElement () {\n      // generate new div Element\n      var newDiv = $(document.createElement('div'));\n      // append at end of leaflet htmlwidget container\n      $(el).append(newDiv);\n      //provide ID and style\n      newDiv.addClass('lnlt');\n      newDiv.css({\"position\":\"relative\",\"bottomleft\":\"0px\",\"background-color\":\"rgba(255, 255, 255, 0.7)\",\"box-shadow\":\"0 0 2px #bbb\",\"background-clip\":\"padding-box\",\"margin\":\"0\",\"padding-left\":\"5px\",\"padding-right\":\"5px\",\"color\":\"#333\",\"font-size\":\"9px\",\"font-family\":\"\\\"Helvetica Neue\\\", Arial, Helvetica, sans-serif\",\"text-align\":\"left\",\"z-index\":\"700\"});\n      return newDiv;\n      }\n\n\n      // check for already existing lnlt class to not duplicate\n      var lnlt = $(el).find('.lnlt');\n\n      if(!lnlt.length) {\n      lnlt = addElement();\n\n      // grab the special div we generated in the beginning\n      // and put the mousmove output there\n\n      map.on('mousemove', function (e) {\n      if (e.originalEvent.ctrlKey) {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                           ' lon: ' + (e.latlng.lng).toFixed(5) +\n                           ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                           ' | zoom: ' + map.getZoom() +\n                           ' | x: ' + L.CRS.EPSG3857.project(e.latlng).x.toFixed(0) +\n                           ' | y: ' + L.CRS.EPSG3857.project(e.latlng).y.toFixed(0) +\n                           ' | epsg: 3857 ' +\n                           ' | proj4: +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs ');\n      } else {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                      ' lon: ' + (e.latlng.lng).toFixed(5) +\n                      ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                      ' | zoom: ' + map.getZoom() + ' ');\n      }\n      });\n\n      // remove the lnlt div when mouse leaves map\n      map.on('mouseout', function (e) {\n      var strip = document.querySelector('.lnlt');\n      if( strip !==null) strip.remove();\n      });\n\n      };\n\n      //$(el).keypress(67, function(e) {\n      map.on('preclick', function(e) {\n      if (e.originalEvent.ctrlKey) {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                      ' lon: ' + (e.latlng.lng).toFixed(5) +\n                      ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                      ' | zoom: ' + map.getZoom() + ' ');\n      var txt = document.querySelector('.lnlt').textContent;\n      console.log(txt);\n      //txt.innerText.focus();\n      //txt.select();\n      setClipboardText('\"' + txt + '\"');\n      }\n      });\n\n      }\n      ).call(this.getMap(), el, x, data);\n}","data":null},{"code":"function(el, x, data) {\n  return (function(el,x,data){\n           var map = this;\n\n           map.on('keypress', function(e) {\n               console.log(e.originalEvent.code);\n               var key = e.originalEvent.code;\n               if (key === 'KeyE') {\n                   var bb = this.getBounds();\n                   var txt = JSON.stringify(bb);\n                   console.log(txt);\n\n                   setClipboardText('\\'' + txt + '\\'');\n               }\n           })\n        }).call(this.getMap(), el, x, data);\n}","data":null}]}}</script>
+<div class="leaflet html-widget html-fill-item" id="htmlwidget-e647fb3a8d9eaa94a1b1" style="width:100%;height:464px;"></div>
+<script type="application/json" data-for="htmlwidget-e647fb3a8d9eaa94a1b1">{"x":{"options":{"minZoom":1,"maxZoom":52,"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}},"preferCanvas":false,"bounceAtZoomLimits":false,"maxBounds":[[[-90,-370]],[[90,370]]]},"calls":[{"method":"addProviderTiles","args":["CartoDB.Positron","CartoDB.Positron","CartoDB.Positron",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["CartoDB.DarkMatter","CartoDB.DarkMatter","CartoDB.DarkMatter",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["OpenStreetMap","OpenStreetMap","OpenStreetMap",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["Esri.WorldImagery","Esri.WorldImagery","Esri.WorldImagery",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"addProviderTiles","args":["OpenTopoMap","OpenTopoMap","OpenTopoMap",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"pane":"tilePane"}]},{"method":"createMapPane","args":["polygon",420]},{"method":"addPolygons","args":[[[[{"lng":[-122.1915,-121.10365,-121.160375,-121.330575,-122.410975,-123.8957,-124.12465,-126.478,-126.880675,-127.7441,-129.414475,-130.911625,-131.602,-131.94695,-133.840475,-133.955,-133.268125,-122.3387,-122.1915],"lat":[47.728175,54.533475,54.5372,54.5482,54.612175,54.6841,54.69355000000001,54.76545,54.77315,54.78515000000001,54.79095,54.77660000000001,54.76375000000001,54.75585000000001,54.69495000000001,54.690275,47.85115,47.736825,47.728175]}]],[[{"lng":[-125.2244784,-123.5003905,-121.0702967,-121.0491195,-120.1399656,-119.8042082,-119.5740264,-118.1369976,-117.2232165,-117.2011209,-117.1967235,-117.2233712,-117.2411555,-117.2785578,-124.6655327,-124.6947502,-124.721796,-124.7488408,-124.7758844,-124.8029269,-124.8299684,-124.8570086,-124.8840478,-124.9110858,-124.9381227,-124.9651584,-124.9921929,-125.0192262,-125.0462584,-125.0732893,-125.1531176,-125.9416066,-126.0711168,-126.0947852,-126.1904079,-126.1841106,-125.2244784],"lat":[40.23038491,37.29926258,33.00490776,32.96874962,32.31227434,32.10959134,31.9798978,31.94880708,32.49697727,32.51421771,32.60412496,32.92927945999999,33.00195115,33.11132893,48.50765351,48.54284845,48.54211757000001,48.54138034,48.54063677,48.53988686,48.5391306,48.538368,48.53759906,48.53682378,48.53604215000001,48.53525419,48.53445988999999,48.53365925,48.53285227,48.53203896,48.51161009,48.23263839,48.17368733000001,48.13677683,47.70114972,47.62942761,40.23038491]}]],[[{"lng":[-117.2232165,-117.2011209,-117.1967235,-117.2233712,-121.10365,-121.160375,-121.330575,-122.410975,-123.8957,-124.12465,-126.478,-126.880675,-127.7441,-129.414475,-130.911625,-131.602,-131.94695,-133.840475,-133.955,-133.268125,-121.0491195,-120.1399656,-119.8042082,-119.5740264,-118.1369976,-117.2232165],"lat":[32.49697727,32.51421771,32.60412496,32.92927945999999,54.533475,54.5372,54.5482,54.612175,54.6841,54.69355000000001,54.76545,54.77315,54.78515000000001,54.79095,54.77660000000001,54.76375000000001,54.75585000000001,54.69495000000001,54.690275,47.85115,32.96874962,32.31227434,32.10959134,31.9798978,31.94880708,32.49697727]}]]],null,"regions.hull",{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}},"pane":"polygon","stroke":true,"color":"#333333","weight":0.5,"opacity":[0.9,0.9,0.9],"fill":true,"fillColor":["#4B0055","#FDE333","#009B95"],"fillOpacity":[0.6,0.6,0.6],"smoothFactor":1,"noClip":false},["<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>1&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>bc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>","<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>2&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>cc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>","<div class='scrollableContainer'><table class=mapview-popup id='popup'><tr class='coord'><td><\/td><th><b>Feature ID&emsp;<\/b><\/th><td>3&emsp;<\/td><\/tr><tr><td>1<\/td><th>region&emsp;<\/th><td>bc_cc&emsp;<\/td><\/tr><tr><td>2<\/td><th>geometry&emsp;<\/th><td>sfc_POLYGON&emsp;<\/td><\/tr><\/table><\/div>"],{"maxWidth":800,"minWidth":50,"autoPan":true,"keepInView":false,"closeButton":true,"closeOnClick":true,"className":""},["bc","cc","bc_cc"],{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},{"stroke":true,"weight":1,"opacity":0.9,"fillOpacity":0.84,"bringToFront":false,"sendToBack":false}]},{"method":"addScaleBar","args":[{"maxWidth":100,"metric":true,"imperial":true,"updateWhenIdle":true,"position":"bottomleft"}]},{"method":"addHomeButton","args":[-133.955,31.94880708,-117.1967235,54.79095,true,"regions.hull","Zoom to regions.hull","<strong> regions.hull <\/strong>","bottomright"]},{"method":"addLayersControl","args":[["CartoDB.Positron","CartoDB.DarkMatter","OpenStreetMap","Esri.WorldImagery","OpenTopoMap"],"regions.hull",{"collapsed":true,"autoZIndex":true,"position":"topleft"}]},{"method":"addLegend","args":[{"colors":["#4B0055","#009B95","#FDE333"],"labels":["bc","bc_cc","cc"],"na_color":null,"na_label":"NA","opacity":1,"position":"topright","type":"factor","title":"regions.hull","extra":null,"layerId":null,"className":"info legend","group":"regions.hull"}]}],"limits":{"lat":[31.94880708,54.79095],"lng":[-133.955,-117.1967235]},"fitBounds":[31.94880708,-133.955,54.79095,-117.1967235,[]]},"evals":[],"jsHooks":{"render":[{"code":"function(el, x, data) {\n  return (\n      function(el, x, data) {\n      // get the leaflet map\n      var map = this; //HTMLWidgets.find('#' + el.id);\n      // we need a new div element because we have to handle\n      // the mouseover output separately\n      // debugger;\n      function addElement () {\n      // generate new div Element\n      var newDiv = $(document.createElement('div'));\n      // append at end of leaflet htmlwidget container\n      $(el).append(newDiv);\n      //provide ID and style\n      newDiv.addClass('lnlt');\n      newDiv.css({\"position\":\"relative\",\"bottomleft\":\"0px\",\"background-color\":\"rgba(255, 255, 255, 0.7)\",\"box-shadow\":\"0 0 2px #bbb\",\"background-clip\":\"padding-box\",\"margin\":\"0\",\"padding-left\":\"5px\",\"padding-right\":\"5px\",\"color\":\"#333\",\"font-size\":\"9px\",\"font-family\":\"\\\"Helvetica Neue\\\", Arial, Helvetica, sans-serif\",\"text-align\":\"left\",\"z-index\":\"700\"});\n      return newDiv;\n      }\n\n\n      // check for already existing lnlt class to not duplicate\n      var lnlt = $(el).find('.lnlt');\n\n      if(!lnlt.length) {\n      lnlt = addElement();\n\n      // grab the special div we generated in the beginning\n      // and put the mousmove output there\n\n      map.on('mousemove', function (e) {\n      if (e.originalEvent.ctrlKey) {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                           ' lon: ' + (e.latlng.lng).toFixed(5) +\n                           ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                           ' | zoom: ' + map.getZoom() +\n                           ' | x: ' + L.CRS.EPSG3857.project(e.latlng).x.toFixed(0) +\n                           ' | y: ' + L.CRS.EPSG3857.project(e.latlng).y.toFixed(0) +\n                           ' | epsg: 3857 ' +\n                           ' | proj4: +proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs ');\n      } else {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                      ' lon: ' + (e.latlng.lng).toFixed(5) +\n                      ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                      ' | zoom: ' + map.getZoom() + ' ');\n      }\n      });\n\n      // remove the lnlt div when mouse leaves map\n      map.on('mouseout', function (e) {\n      var strip = document.querySelector('.lnlt');\n      if( strip !==null) strip.remove();\n      });\n\n      };\n\n      //$(el).keypress(67, function(e) {\n      map.on('preclick', function(e) {\n      if (e.originalEvent.ctrlKey) {\n      if (document.querySelector('.lnlt') === null) lnlt = addElement();\n      lnlt.text(\n                      ' lon: ' + (e.latlng.lng).toFixed(5) +\n                      ' | lat: ' + (e.latlng.lat).toFixed(5) +\n                      ' | zoom: ' + map.getZoom() + ' ');\n      var txt = document.querySelector('.lnlt').textContent;\n      console.log(txt);\n      //txt.innerText.focus();\n      //txt.select();\n      setClipboardText('\"' + txt + '\"');\n      }\n      });\n\n      }\n      ).call(this.getMap(), el, x, data);\n}","data":null},{"code":"function(el, x, data) {\n  return (function(el,x,data){\n           var map = this;\n\n           map.on('keypress', function(e) {\n               console.log(e.originalEvent.code);\n               var key = e.originalEvent.code;\n               if (key === 'KeyE') {\n                   var bb = this.getBounds();\n                   var txt = JSON.stringify(bb);\n                   console.log(txt);\n\n                   setClipboardText('\\'' + txt + '\\'');\n               }\n           })\n        }).call(this.getMap(), el, x, data);\n}","data":null}]}}</script>
 </div>
 </div>
 </section>
@@ -168,6 +203,8 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 <section id="nearest-neighbor-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="nearest-neighbor-analysis">Nearest Neighbor Analysis</h2>
 <p>We start our exploration by conducting a simple nearest neighbor analysis to evaluate how well the raw MOM6 output matches the in situ data. MOM6 data are interpolated using bilinear interpolation between spatial point (lat, lon), and linear interpolation between depths.</p>
+<section id="initial-data-checks" class="level3">
+<h3 class="anchored" data-anchor-id="initial-data-checks">Initial data checks</h3>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -177,18 +214,14 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 </div>
 </div>
 </div>
+<p>The data distributions look similar.</p>
 <div class="cell">
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 4 × 2
-   year  rmse
-  &lt;dbl&gt; &lt;dbl&gt;
-1  2011  41.0
-2  2012  36.7
-3  2013  44.0
-4  2015  29.3</code></pre>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
 </div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 37.61471</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -209,6 +242,7 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 </div>
 </div>
 </div>
+<p>Overall, MOM6 tends to overestimate oxygen compared to in situ values with greater overestimation at higher oxygen values and shallower depths.</p>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -218,6 +252,7 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 </div>
 </div>
 </div>
+<p>The extracted MOM6 values decrease with increasing depth, following the expected oxygen and depth relationship.</p>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -227,44 +262,64 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 </div>
 </div>
 </div>
+<p>Looking at mean (i.e., averaged over all depth layers) spatial differences, MOM6 tends to overestimate oxygen closer to the shoreline, where the influence of shallower, more oxygenated depth layers is greater.</p>
 </section>
-<section id="skill-testing-analysis" class="level2">
-<h2 class="anchored" data-anchor-id="skill-testing-analysis">Skill Testing Analysis</h2>
-<p>Then we conduct an analysis following methodology from Indivero et al., 2025 to improve the skill of the MOM6 output. Here, we extract MOM6 values at all vertical levels shallower than 500 m within a specified region (e.g., bc_cc, bc, or cc), fit a spatial model to the extracted MOM6 data, predict back to the location and depth of the in situ data, and calculate RMSE to evaluate skill.</p>
-<section id="initial-data-checks" class="level3">
-<h3 class="anchored" data-anchor-id="initial-data-checks">Initial data checks</h3>
+<section id="rmse-results" class="level3">
+<h3 class="anchored" data-anchor-id="rmse-results">RMSE results</h3>
+<section id="all-data" class="level4">
+<h4 class="anchored" data-anchor-id="all-data">All data</h4>
+<p>Now let’s look at the RMSE results, first looking at results using all the data combined.</p>
 <div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  41.0
+2  2012  36.7
+3  2013  44.0
+4  2015  29.3</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 37.61471</code></pre>
 </div>
 </div>
-</div>
+</section>
+<section id="hake-oxygen-preference-boundary-o2-119-µmkg" class="level4">
+<h4 class="anchored" data-anchor-id="hake-oxygen-preference-boundary-o2-119-µmkg">Hake oxygen preference boundary (o2 &lt; 119 µm/kg)</h4>
+<p>Let’s narrow the range of values to include only o2 values where hake start showing altered behavior or distribution due to low oxygen (Moriarty et al., 2020). In theory, large oxygen values need to be less precise because they won’t influence distribution (i.e., we only need precise O2 estimates at lower values when oxygen influences distribution).</p>
 <div class="cell">
-<div class="cell-output cell-output-stderr">
-<pre><code>`summarise()` has grouped output by 'longitude'. You can override using the
-`.groups` argument.</code></pre>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  40.1
+2  2012  35.3
+3  2013  42.0
+4  2015  21.1</code></pre>
 </div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 35.50725</code></pre>
 </div>
 </div>
-</div>
+</section>
+<section id="hake-habitat-100-500-m" class="level4">
+<h4 class="anchored" data-anchor-id="hake-habitat-100-500-m">Hake habitat (100-500 m)</h4>
+<p>Next let’s see how well oxygen values are predicted within hake habitat.</p>
 <div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  30.3
+2  2012  26.6
+3  2013  26.6
+4  2015  20.6</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 26.02717</code></pre>
 </div>
 </div>
-</div>
-<p>The data is left skewed so let’s try and make it look more normally distributed using a quantile transformation.</p>
+<p>And look at the spatial differences of the data within hake habitat (i.e., excluding the mixed layer).</p>
 <div class="cell">
 <div class="cell-output-display">
 <div>
@@ -275,39 +330,43 @@ $ region       &lt;chr&gt; "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc", "bc",
 </div>
 </div>
 </section>
-<section id="fit-glmm-to-mom6-output-and-calculate-rmse" class="level3">
-<h3 class="anchored" data-anchor-id="fit-glmm-to-mom6-output-and-calculate-rmse">Fit GLMM to MOM6 output and calculate RMSE</h3>
+<section id="oxygen-preference-boundary-within-hake-habitat-o2-119-µmkg-between-100-500-m" class="level4">
+<h4 class="anchored" data-anchor-id="oxygen-preference-boundary-within-hake-habitat-o2-119-µmkg-between-100-500-m">Oxygen preference boundary within hake habitat (o2 &lt; 119 µm/kg between 100-500 m)</h4>
+<p>Then let’s see how well O2 values within the oxygen preference boundary are estimated in hake habitat.</p>
 <div class="cell">
 <div class="cell-output cell-output-stdout">
-<pre><code>      mom6 n_test year
-1 53.05464  40408 2011
-2 37.40219  12912 2012
-3 32.52316  18187 2013
-4 30.89410  34914 2015</code></pre>
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  30.5
+2  2012  27.2
+3  2013  26.8
+4  2015  17.4</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>     rmse_total
-mom6   41.62215</code></pre>
+<pre><code>[1] 25.75287</code></pre>
 </div>
 </div>
-<section id="results" class="level4">
-<h4 class="anchored" data-anchor-id="results">2011 Results</h4>
+</section>
+<section id="hake-forecast-work-250-300-m" class="level4">
+<h4 class="anchored" data-anchor-id="hake-forecast-work-250-300-m">Hake forecast work (250-300 m)</h4>
+<p>And finally, lets narrow the depth range further to look at the range of values we will focus on in our forecasting work.</p>
 <div class="cell">
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  17.1
+2  2012  21.4
+3  2013  21.4
+4  2015  17.1</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 18.68044</code></pre>
 </div>
 </div>
-</div>
+<p>…and look at it spatially.</p>
 <div class="cell">
-<div class="cell-output cell-output-stderr">
-<pre><code>`summarise()` has grouped output by 'longitude'. You can override using the
-`.groups` argument.
-`summarise()` has grouped output by 'longitude'. You can override using the
-`.groups` argument.</code></pre>
-</div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -319,8 +378,333 @@ mom6   41.62215</code></pre>
 </section>
 </section>
 </section>
+<section id="indivero-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="indivero-analysis">Indivero Analysis</h2>
+<p>Then we conduct an analysis following methodology from Indivero et al., 2025 to attempt to improve the skill of the MOM6 output. Here, we extract MOM6 values at all vertical levels shallower than 500 m within a specified region (e.g., bc_cc, bc, or cc), fit a spatial model to the extracted MOM6 data, predict back to the location and depth of the in situ data, and calculate RMSE to evaluate skill.</p>
+<section id="initial-data-checks-before-model-fitting" class="level3">
+<h3 class="anchored" data-anchor-id="initial-data-checks-before-model-fitting">Initial data checks before model fitting</h3>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The data is left skewed but the Dharma residuals and model fit looked fine so we will use it as is (i.e., untransformed).</p>
+</section>
+<section id="model-structure" class="level3">
+<h3 class="anchored" data-anchor-id="model-structure">Model structure</h3>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Spatial model fit by ML ['sdmTMB']
+Formula: o2 ~ 1 + s(depth_ln, k = 3) + as.factor(month)
+Mesh: spde (isotropic covariance)
+Data: region_dat
+Family: gaussian(link = 'identity')
+ 
+Conditional model:
+                   coef.est coef.se
+(Intercept)            1.58    0.92
+as.factor(month)2      0.02    0.00
+as.factor(month)3      0.03    0.00
+as.factor(month)4      0.03    0.00
+as.factor(month)5      0.01    0.00
+as.factor(month)6     -0.03    0.00
+as.factor(month)7     -0.07    0.00
+as.factor(month)8     -0.09    0.00
+as.factor(month)9     -0.10    0.00
+as.factor(month)10    -0.11    0.00
+as.factor(month)11    -0.09    0.00
+as.factor(month)12    -0.05    0.00
+sdepth_ln             -0.52    0.00
 
-</main>
+Smooth terms:
+             Std. Dev.
+sds(depth_ln      5.48
+
+Dispersion parameter: 0.22
+Matérn range: 1415.54
+Spatial SD: 0.93
+ML criterion at convergence: -106518.510
+
+See ?tidy.sdmTMB to extract these values as a data frame.</code></pre>
+</div>
+</div>
+</section>
+<section id="rmse-results-1" class="level3">
+<h3 class="anchored" data-anchor-id="rmse-results-1">RMSE results</h3>
+<section id="all-data-1" class="level4">
+<h4 class="anchored" data-anchor-id="all-data-1">All data</h4>
+<p>Now let’s look at the RMSE results, first looking at results using all the data combined.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>      mom6 n_test year
+1 53.80417  40408 2011
+2 39.84396  12912 2012
+3 36.73544  18187 2013
+4 31.82191  34914 2015</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     rmse_total
+mom6    43.0656</code></pre>
+</div>
+</div>
+</section>
+<section id="hake-oxygen-preference-boundary-o2-119-µmkg-1" class="level4">
+<h4 class="anchored" data-anchor-id="hake-oxygen-preference-boundary-o2-119-µmkg-1">Hake oxygen preference boundary (o2 &lt; 119 µm/kg)</h4>
+<p>Again, we narrow the range of values to include only O2 values where hake start showing altered behavior or distribution due to low oxygen (Moriarty et al., 2020)…</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  54.3
+2  2012  39.5
+3  2013  36.8
+4  2015  31.2</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 43.68179</code></pre>
+</div>
+</div>
+</section>
+<section id="hake-habitat-100-500-m-1" class="level4">
+<h4 class="anchored" data-anchor-id="hake-habitat-100-500-m-1">Hake habitat (100-500 m)</h4>
+<p>…and see how well oxygen values are predicted within hake habitat…</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  38.7
+2  2012  27.4
+3  2013  27.0
+4  2015  27.1</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 31.64303</code></pre>
+</div>
+</div>
+<p>…looking at spatial distributions…</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-23-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="oxygen-preference-boundary-within-hake-habitat-o2-119-µmkg-between-100-500-m-1" class="level4">
+<h4 class="anchored" data-anchor-id="oxygen-preference-boundary-within-hake-habitat-o2-119-µmkg-between-100-500-m-1">Oxygen preference boundary within hake habitat (o2 &lt; 119 µm/kg between 100-500 m)</h4>
+<p>… then looking at how well O2 values within the oxygen preference boundary are estimated in hake habitat…</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  38.6
+2  2012  27.7
+3  2013  27.0
+4  2015  27.6</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 32.01885</code></pre>
+</div>
+</div>
+</section>
+<section id="hake-forecast-work-250-300-m-1" class="level4">
+<h4 class="anchored" data-anchor-id="hake-forecast-work-250-300-m-1">Hake forecast work (250-300 m)</h4>
+<p>…and finally, narrowing the depth range further to look at the range of values we will focus on in our forecasting work…</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 2
+   year  rmse
+  &lt;dbl&gt; &lt;dbl&gt;
+1  2011  21.4
+2  2012  15.2
+3  2013  18.5
+4  2015  18.5</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 19.30715</code></pre>
+</div>
+</div>
+<p>…and looking at it spatially.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="temporal-trends" class="level2">
+<h2 class="anchored" data-anchor-id="temporal-trends">Temporal trends</h2>
+<p>Next, lets see if the three scenarios align temporally (i.e., are they following roughly the same trend through time) starting with trends on an annual scale.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here we can see trend shape similarities between all three scenarios with the Indivero scenario deviating from the shape of the in situ trend only in 2011 and the nearest neighbor scenario resembling a flattened version of the in situ trend. Next let’s try adjusting the scale to a year-month resolution.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here we can see that both analyses generally follow the same temporal trend as the in situ scenario but with greater overall estimated values. The nearest neighbor scenario estimates increasing O2 values as months progress within each year which more closely resembles the trend of the in situ data.</p>
+</section>
+<section id="anomalies" class="level2">
+<h2 class="anchored" data-anchor-id="anomalies">Anomalies</h2>
+<p>Now let’s remove some of the mean biases from each scenario and look at variability through time by comparing dataset mean anomalies (i.e., not a climatological anomaly) on an annual and depth scale. Depths are grouped into 5 m depth bins.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>And look at anomalies on a year-month scale.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>And finally look at anomalies spatially, comparing in situ to the Indivero method first.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>And then comparing the in situ to the nearest neighbor method.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="skill_test_mom6_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="confusion-matrix" class="level2">
+<h2 class="anchored" data-anchor-id="confusion-matrix">Confusion matrix</h2>
+<p>Thinking about this from a slightly different angle, let’s simplify it to a binary scenario and calculate some evaluation metrics based on a confusion matrix. In this example we will label oxygen values less than hakes oxygen preference boundary (i.e., 119 µm/kg) as 1, and oxygen values greater than the preference boundary as 0.</p>
+<section id="indivero-method" class="level3">
+<h3 class="anchored" data-anchor-id="indivero-method">Indivero method</h3>
+<p>We’ll start by comparing in situ to the Indivero method first.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>          Predicted
+Observed   Positive Negative
+  Positive    33585      390
+  Negative    15843    29005</code></pre>
+</div>
+</div>
+<p>From the confusion matrix we can see relatively low false positive rates (390) and higher false negative rates (15843) indicating that the model is overpredicting oxygen values, which mirrors what we saw in the analysis above.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "True Skill Statistic"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6662056</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Matthews Correlation Coefficient"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6505494</code></pre>
+</div>
+</div>
+<p>Finally, we can calculate True Skill Statistic and Matthews Correlation Coefficent evaluation metrics that account for class imbalances. Both range from -1 (inverse prediction) to 1 (perfect prediction) with 0 indicating classification no better than random. There isn’t a single universal cutoff for values that are considered acceptable, but in practice, TSS and MCC values of 0-0.2 are considered very weak, 0.2-0.4 have weak to moderate skill, 0.4-0.6 have moderate to good skill, 0.6-0.8 have strong skill, and 0.8 to 1.0 have near perfect skill. Both our TSS and MCC values fall within the strong skill range suggesting a strong, reliable classification model.</p>
+</section>
+<section id="nearest-neighbor-method" class="level3">
+<h3 class="anchored" data-anchor-id="nearest-neighbor-method">Nearest neighbor method</h3>
+<p>Then we compare in situ to the nearest neighbor method.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>          Predicted
+Observed   Positive Negative
+  Positive    37417     1369
+  Negative    12011    28026</code></pre>
+</div>
+</div>
+<p>From the confusion matrix we can see relatively low false positive rates (1369) and higher false negative rates (12011) indicating that the model is overpredicting oxygen values, which mirrors what we saw in the analysis above.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "True Skill Statistic"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7104275</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Matthews Correlation Coefficient"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6871867</code></pre>
+</div>
+</div>
+<p>And again, both our TSS and MCC values fall within the strong skill range suggesting a strong, reliable classification model.</p>
+</section>
+</section>
+<section id="conclusions" class="level2">
+<h2 class="anchored" data-anchor-id="conclusions">Conclusions</h2>
+<p>Our evaluation indicates that the raw MOM6 output (i.e., the nearest neighbor method) is suitable for inclusion in the forecasting model. The nearest neighbor method consistently outperformed the Indivero method across all RMSE comparisons, reproduced temporal trends observed in the in situ data, and demonstrated strong predictive skill in the binary framework (TSS and MCC). RMSE values at the focal depths of the forecasting analysis were within an acceptable range (15–20; Indivero, pers. comm., 2025-08-22). While MOM6 tended to overestimate oxygen concentrations in shallower waters, these biases occurred primarily above the oxygen preference boundary, as reflected by the lower false-positive rate (n = 1369), and are unlikely to influence hake distribution. More importantly, howeever, MOM6 also overestimated oxygen at depths of ~100–200 m, where oxygen values may be lower than the preference boundary value, which could lead to localized overprediction of hake biomass in the forecast model.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-indivero2025" class="csl-entry" role="listitem">
+Indivero, Julia, Sean C. Anderson, Lewis A. K. Barnett, John E. Pohl, Sean K. Rohan, Samantha Siedlecki, Eric J. Ward, and Timothy E. Essington. 2025. <span>“Skill Testing Oxygen Data for Distribution Modeling of Marine Species.”</span> <em>Fisheries Oceanography</em>. <a href="https://doi.org/10.1111/fog.70005">https://doi.org/10.1111/fog.70005</a>.
+</div>
+</div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {

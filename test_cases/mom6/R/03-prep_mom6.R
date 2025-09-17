@@ -169,3 +169,20 @@ o2_df_all <- rbind(o2_df_2011,
 # save 
 write_rds(o2_df_all, 
           paste0(root_dir, "data/mom6/o2_df_all.rds"))
+
+# create MOM6 region data object for later cropped to region of interest
+# Regional polygon
+regions.hull <- readRDS(paste0(root_dir, "data/regions_hull.rds"))
+test_region <- "bc_cc"
+poly <- filter(regions.hull, region==test_region)
+#Convert to sf
+mom6_sf <-  st_as_sf(o2_df_all, coords = c("longitude", "latitude"), crs = st_crs(4326))
+# pull out observations within each region
+region_dat  <- st_filter(mom6_sf, poly)
+region_dat <- as.data.frame(region_dat)
+
+# save
+write_rds(region_dat, 
+          paste0(root_dir, "data/mom6/mom6_", test_region, ".rds"))
+
+

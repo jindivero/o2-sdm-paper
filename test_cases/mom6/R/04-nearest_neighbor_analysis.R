@@ -20,6 +20,7 @@ library(lubridate)
 library(terra)
 library(sf)
 library(readr)
+library(ggplot2)
 
 
 # set root directory

@@ -116,7 +116,7 @@ Then we prepare the MOM6 data for analysis. Here we grab 3D MOM6 oxygen output f
 
 ## Nearest Neighbor Analysis
 
-We start our exploration by conducting a simple nearest neighbor analysis to evaluate how well the raw MOM6 output matches the in situ data. MOM6 data are interpolated using bilinear interpolation between spatial point (lat, lon), and linear interpolation between depths.
+We start our exploration by conducting a simple nearest neighbor (NN) analysis to evaluate how well the regridded MOM6 output matches the in situ data. We pull the MOM6 data at the same locations, times, and depths as the in situ data. MOM6 data are interpolated using bilinear interpolation between spatial point (lat, lon), and linear interpolation between depths.
 
 ### Initial data checks
 
@@ -154,7 +154,7 @@ p2 <- ggplot(nn, aes(x = o2_nn_interp)) +
   scale_y_continuous(limits = c(0, 10000)) + 
   plot_theme +
   labs(
-    title = "MOM6",
+    title = "NN MOM6",
     x = "Dissolved Oxygen (µmol/kg)",
     y = "Count"
   )
@@ -179,7 +179,7 @@ ggplot(data = nn, aes(x = o2, y = o2_nn_interp, col = depth)) +
           breaks = scales::pretty_breaks(n = 3)) +
           theme(legend.position = "bottom") +
           plot_theme +
-          labs(x = "In situ (CTD)", y = "MOM6 O2") +
+          labs(x = "In situ (CTD)", y = "NN MOM6 O2") +
           geom_abline(intercept = 0, slope = 1)+
           theme(legend.position="bottom")
 
@@ -195,7 +195,7 @@ nn$resids <- nn$o2 - nn$o2_nn_interp
 ggplot(data = nn, aes(x = (o2_nn_interp), y = resids, col = depth)) +
     geom_point() +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-    labs(x = "MOM6 O2", y = "Residuals (in situ - MOM6)") +
+    labs(x = "NN MOM6 O2", y = "Residuals (in situ - NN MOM6)") +
     plot_theme +
     scale_colour_gradientn(colours = brewer.pal(9, "Blues")[3:9],
           name = "Depth",
@@ -210,9 +210,9 @@ ggplot(data = nn, aes(x = (o2_nn_interp), y = resids, col = depth)) +
 # plot depth and residuals
 ggplot(data = nn, aes(x = depth, y = resids, col = o2_nn_interp)) +
     geom_point() +
-    labs(x = "Depth (m)", y = "Residuals (in situ - MOM6") +
+    labs(x = "Depth (m)", y = "Residuals (in situ - NN MOM6)") +
     plot_theme +
-    scale_colour_viridis(name = "MOM6 O2") +
+    scale_colour_viridis(name = "NN MOM6 O2") +
   theme(legend.position = "bottom") 
 ```
 
@@ -224,7 +224,7 @@ Overall, MOM6 tends to overestimate oxygen compared to in situ values with great
 # plot oxygen by depth
 ggplot(data = nn, aes(x = (o2_nn_interp), y = depth)) +
     geom_point(alpha = 0.1) +
-    labs(x = "MOM6 O2", y = "Depth") +
+    labs(x = "NN MOM6 O2", y = "Depth") +
     scale_y_reverse() +
     plot_theme +
     theme(legend.position = "none") 
@@ -296,7 +296,7 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean NN MOM6 O2 Values") +
   scale_color_viridis(option = "viridis", limits = c(0, max(o2_range)), name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -312,7 +312,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - NN MOM6", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -452,7 +452,7 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean NN MOM6 O2 Values") +
   scale_color_viridis(option = "viridis", limits = c(0, max(o2_range)), name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -468,7 +468,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - NN MOM6", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -482,26 +482,6 @@ p3 <- ggplot(o2_diff) +
 
 # Combine plots side by side with shared legend
 p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-
-```
-
-#### Oxygen preference boundary within hake habitat (o2 \< 119 µm/kg between 100-500 m)
-
-Then let's see how well O2 values within the oxygen preference boundary are estimated in hake habitat.
-
-```{r}
-#| echo: false
-
-### look at hypoxic zones in hake habitat ###
-nn_hh <- nn_habitat[nn_habitat$o2 <= 119, ]
-# Calculate RMSE by year
-nn_hh %>%
-  group_by(year) %>%
-  summarise(
-    rmse = rmse(o2, o2_nn_interp)
-  )
-# Calculate total RMSE 
-rmse(nn_hh$o2, nn_hh$o2_nn_interp)
 
 ```
 
@@ -579,7 +559,7 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean NN MOM6 O2 Values") +
   scale_color_viridis(option = "viridis", limits = c(0, max(o2_range)), name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -595,7 +575,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - NN MOM6", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -845,7 +825,7 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean Indivero MOM6 O2 Values") +
   scale_color_viridis(option = "viridis", limits = c(0, max(o2_range)), name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -861,7 +841,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - Indivero MOM6", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -875,25 +855,6 @@ p3 <- ggplot(o2_diff) +
 
 # Combine plots side by side with shared legend
 p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-```
-
-#### Oxygen preference boundary within hake habitat (o2 \< 119 µm/kg between 100-500 m)
-
-... then looking at how well O2 values within the oxygen preference boundary are estimated in hake habitat...
-
-```{r}
-#| echo: false
-
-skill_hh <- skill_habitat[skill_habitat$o2 <= 119, ]
-# Calculate RMSE by year
-skill_hh %>%
-  group_by(year) %>%
-  summarise(
-    rmse = rmse(o2, est)
-  )
-# Calculate total RMSE 
-rmse(skill_hh$o2, skill_hh$est)
-
 ```
 
 #### Hake forecast work (250-300 m)
@@ -970,7 +931,7 @@ p2 <- ggplot(o2_by_location_mom6) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
+  labs(title = "Mean Indivero MOM6 O2 Values") +
   scale_color_viridis(option = "viridis", limits = c(0, max(o2_range)), name = "O2 (µmol/kg)") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -986,7 +947,7 @@ p3 <- ggplot(o2_diff) +
   xlab("Longitude") +
   xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
   ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
+  labs(title = "Difference: In Situ - Indivero MOM6", color = "ΔO2 (µmol/kg)") +
   scale_color_gradient2(
     low = "blue",
     mid = "white",
@@ -1016,7 +977,7 @@ skill_preds <- left_join(skill_preds, nn)
 
 # add depth bins for anomaly calculation later
 skill_preds <- skill_preds %>%
-  mutate(depth_bin = cut(depth, breaks = seq(0, max(depth, na.rm=TRUE)+5, by=5),
+  mutate(depth_bin = cut(depth, breaks = seq(0, max(depth, na.rm=TRUE)+5, by=100),
                          include.lowest = TRUE, right = FALSE))
 # add year month column for anomaly calculation later
 skill_preds <- skill_preds %>%
@@ -1024,7 +985,7 @@ skill_preds <- skill_preds %>%
 
 # Reshape into long format
 skill_preds_long <- skill_preds %>%
-  select(year, month, o2, est, o2_nn_interp, depth, year_month) %>%
+  select(year, month, o2, est, o2_nn_interp, depth, depth_bin, year_month) %>%
   pivot_longer(cols = c(o2, est, o2_nn_interp),
                names_to = "variable",
                values_to = "value")
@@ -1063,6 +1024,44 @@ ggplot(skill_preds_summary, aes(x = year, y = mean, color = variable)) +
                     labels = c("est" = "Indivero",
                                "o2_nn_interp" = "Nearest neighbor",
                                "o2" = "In situ"))
+
+# # plot with depth facets
+# # Summarize mean and 95% CI by year and variable
+# skill_preds_summary <- skill_preds_long %>%
+#   group_by(year, variable, depth_bin) %>%
+#   summarise(
+#     mean = mean(value, na.rm = TRUE),
+#     se = sd(value, na.rm = TRUE) / sqrt(n()),   # standard error
+#     .groups = "drop"
+#   ) %>%
+#   mutate(
+#     lower = mean - 1.96 * se,
+#     upper = mean + 1.96 * se
+#   )
+# 
+# # plot
+# ggplot(skill_preds_summary, aes(x = year, y = mean, color = variable)) +
+#   geom_line() +
+#   geom_point() +
+#   geom_ribbon(aes(ymin = lower, ymax = upper, fill = variable),
+#               alpha = 0.2, color = NA) +
+#   # plot_theme +
+#   facet_wrap(~depth_bin) +
+#   theme_minimal() +
+#   labs(x = "Year", y = "Oxygen (mean ± 95% CI)",
+#        color = NULL, fill = NULL) +
+#   scale_color_manual(values = c("est" = "blue",
+#                                 "o2_nn_interp" = "red",
+#                                 "o2" = "black"),
+#                      labels = c("est" = "Indivero",
+#                                 "o2_nn_interp" = "Nearest neighbor",
+#                                 "o2" = "In situ")) +
+#   scale_fill_manual(values = c("est" = "blue",
+#                                "o2_nn_interp" = "red",
+#                                "o2" = "black"),
+#                     labels = c("est" = "Indivero",
+#                                "o2_nn_interp" = "Nearest neighbor",
+#                                "o2" = "In situ"))
 
 ```
 
@@ -1111,303 +1110,7 @@ ggplot(skill_preds_summary, aes(x = year_month, y = mean, color = variable)) +
 
 Here we can see that both analyses generally follow the same temporal trend as the in situ scenario but with greater overall estimated values. The nearest neighbor scenario estimates increasing O2 values as months progress within each year which more closely resembles the trend of the in situ data.
 
-## Anomalies
-
-Now let's remove some of the mean biases from each scenario and look at variability through time by comparing dataset mean anomalies (i.e., not a climatological anomaly) on an annual and depth scale. Depths are grouped into 5 m depth bins.
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-# remove rows with NAs in the nearest neighbor values to match sample size in all scenarios
-skill_preds_anom <- skill_preds
-skill_preds_anom <- skill_preds_anom[!is.na(skill_preds_anom$o2_nn_interp),]
-
-# create anomaly dataset
-skill_preds_anom <- skill_preds_anom %>%
-  group_by(depth_bin) %>%
-  mutate(o2_anom = o2 - mean(o2, na.rm = TRUE),
-         est_anom = est - mean(est, na.rm = TRUE),
-         o2_nn_interp_anom = o2_nn_interp - mean(o2_nn_interp, na.rm = TRUE)) %>%
-  ungroup()
-
-# Reshape into long format
-anom_long <- skill_preds_anom %>%
-  select(year, month, o2_anom, est_anom, o2_nn_interp_anom, depth, depth_bin, year_month) %>%
-  pivot_longer(cols = c(o2_anom, est_anom, o2_nn_interp_anom),
-               names_to = "variable",
-               values_to = "value")
-
-# Summarize mean and 95% CI by year and variable
-anom_summary <- anom_long %>%
-  group_by(year, variable) %>%
-  summarise(
-    mean = mean(value, na.rm = TRUE),
-    se = sd(value, na.rm = TRUE) / sqrt(n()),   # standard error
-    .groups = "drop"
-  ) %>%
-  mutate(
-    lower = mean - 1.96 * se,
-    upper = mean + 1.96 * se
-  )
-
-# Plot
-ggplot(anom_summary, aes(x = year, y = mean, color = variable)) +
-  geom_line() +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_ribbon(aes(ymin = lower, ymax = upper, fill = variable),
-              alpha = 0.2, color = NA) +
-  plot_theme +
-  labs(x = "Year", y = "Oxygen anomaly (mean ± 95% CI)",
-       color = NULL, fill = NULL) +
-  scale_color_manual(values = c("est_anom" = "blue",
-                                "o2_nn_interp_anom" = "red",
-                                "o2_anom" = "black"),
-                     labels = c("est_anom" = "Indivero",
-                                "o2_nn_interp_anom" = "Nearest neighbor",
-                                "o2_anom" = "In situ")) +
-  scale_fill_manual(values = c("est_anom" = "blue",
-                               "o2_nn_interp_anom" = "red",
-                               "o2_anom" = "black"),
-                    labels = c("est_anom" = "Indivero",
-                               "o2_nn_interp_anom" = "Nearest neighbor",
-                               "o2_anom" = "In situ"))
-
-# # violin
-# ggplot(anom_long, aes(x = factor(year), y = value, fill = variable)) +
-#   geom_violin(alpha = 0.4, position = position_dodge(width = 0.8)) +
-#   geom_boxplot(width = 0.1, position = position_dodge(width = 0.8),
-#                outlier.shape = NA, alpha = 0.6) +
-#   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-#   plot_theme +
-#   labs(x = "Year", y = "Oxygen anomaly", fill = NULL) +
-#   scale_fill_manual(values = c("est_anom" = "blue",
-#                                "o2_nn_interp_anom" = "red",
-#                                "o2_anom" = "black"),
-#                     labels = c("est_anom" = "Indivero",
-#                                "o2_nn_interp_anom" = "Nearest neighbor",
-#                                "o2_anom" = "In situ"))
-
-
-```
-
-And look at anomalies on a year-month scale.
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-# Summarize mean and 95% CI by year and variable
-anom_summary <- anom_long %>%
-  group_by(year_month, variable) %>%
-  summarise(
-    mean = mean(value, na.rm = TRUE),
-    se = sd(value, na.rm = TRUE) / sqrt(n()),   # standard error
-    .groups = "drop"
-  ) %>%
-  mutate(
-    lower = mean - 1.96 * se,
-    upper = mean + 1.96 * se
-  )
-
-# plot
-ggplot(anom_summary, aes(x = year_month, y = mean, color = variable)) +
-  geom_line() +
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  geom_ribbon(aes(ymin = lower, ymax = upper, fill = variable), 
-              alpha = 0.2, color = NA) +
-  plot_theme +
-  labs(x = "Year", y = "Oxygen anomaly (mean ± 95% CI)", 
-       color = NULL, fill = NULL) +
-  scale_color_manual(values = c("est_anom" = "blue",
-                                "o2_nn_interp_anom" = "red",
-                                "o2_anom" = "black"),
-                     labels = c("est_anom" = "Indivero",
-                                "o2_nn_interp_anom" = "Nearest neighbor",
-                                "o2_anom" = "In situ")) +
-  scale_fill_manual(values = c("est_anom" = "blue",
-                               "o2_nn_interp_anom" = "red",
-                               "o2_anom" = "black"),
-                    labels = c("est_anom" = "Indivero",
-                               "o2_nn_interp_anom" = "Nearest neighbor",
-                               "o2_anom" = "In situ"))
-
-# # violin
-# ggplot(anom_long, aes(x = factor(year_month), y = value, fill = variable)) +
-#   geom_violin(alpha = 0.4, position = position_dodge(width = 0.8)) +
-#   geom_boxplot(width = 0.1, position = position_dodge(width = 0.8),
-#                outlier.shape = NA, alpha = 0.6) +
-#   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-#   plot_theme +
-#   labs(x = "Year", y = "Oxygen anomaly", fill = NULL) +
-#   scale_fill_manual(values = c("est_anom" = "blue",
-#                                "o2_nn_interp_anom" = "red",
-#                                "o2_anom" = "black"),
-#                     labels = c("est_anom" = "Skill test",
-#                                "o2_nn_interp_anom" = "Nearest neighbor",
-#                                "o2_anom" = "In situ"))
-```
-
-And finally look at anomalies spatially, comparing in situ to the Indivero method first.
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-# calculate mean o2 by location- in situ
-o2_by_location <- skill_preds_anom %>%
-  group_by(longitude, latitude) %>%
-  dplyr::summarise(mean_o2 = mean(o2_anom, na.rm = TRUE)) %>%
-  ungroup()
-
-# calculate mean o2 by location- MOM6
-o2_by_location_mom6 <- skill_preds_anom %>%
-  group_by(longitude, latitude) %>%
-  dplyr::summarise(mean_o2 = mean(est_anom, na.rm = TRUE)) %>%
-  ungroup()
-
-# calculate mean o2 by location- nearest neighbor
-o2_by_location_nn <- skill_preds_anom %>%
-  group_by(longitude, latitude) %>%
-  dplyr::summarise(mean_o2 = mean(o2_nn_interp_anom, na.rm = TRUE)) %>%
-  ungroup()
-
-# Merge in situ and MOM6 mean O2 by location
-o2_diff <- o2_by_location %>%
-  rename(mean_o2_obs = mean_o2) %>%
-  inner_join(o2_by_location_mom6 %>% rename(mean_o2_mom6 = mean_o2),
-             by = c("longitude", "latitude")) %>%
-  mutate(diff_o2 = mean_o2_obs - mean_o2_mom6)
-
-# Merge in situ and nearest neighbor mean O2 by location
-o2_diff_nn <- o2_by_location %>%
-  rename(mean_o2_obs = mean_o2) %>%
-  inner_join(o2_by_location_nn %>% rename(mean_o2_mom6 = mean_o2),
-             by = c("longitude", "latitude")) %>%
-  mutate(diff_o2 = mean_o2_obs - mean_o2_mom6)
-
-# Find the global O2 range across both datasets
-o2_range_anom <- range(c(o2_by_location$mean_o2, o2_by_location_mom6$mean_o2, o2_by_location_nn$mean_o2), na.rm = TRUE)
-
-# Find symmetric range for difference plot color scale
-diff_range_anom <- max(abs(c(o2_diff$diff_o2, o2_diff_nn$diff_o2)), na.rm = TRUE)
-
-# First plot: In situ O2
-p1 <- ggplot(o2_by_location) +
-  geom_sf(data = namerica_state_wgs_df,
-          fill = NA, color = "grey10", size = 0.2) +
-  geom_point(aes(x = longitude, y = latitude, color = mean_o2),
-             size = 0.5,
-             alpha = 0.6) +
-  ylab("Latitude") +
-  xlab("Longitude") +
-  xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
-  ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean In Situ O2 Values") +
-  scale_color_viridis(option = "viridis", limits = o2_range_anom, name = "O2 (µmol/kg)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(size = 10))
-
-# Second plot: MOM6 O2
-p2 <- ggplot(o2_by_location_mom6) +
-  geom_sf(data = namerica_state_wgs_df,
-          fill = NA, color = "grey10", size = 0.2) +
-  geom_point(aes(x = longitude, y = latitude, color = mean_o2),
-             size = 0.5,
-             alpha = 0.6) +
-  ylab("Latitude") +
-  xlab("Longitude") +
-  xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
-  ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
-  scale_color_viridis(option = "viridis", limits = o2_range_anom, name = "O2 (µmol/kg)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(size = 10))
-
-# Third plot: Difference (MOM6 - In Situ)
-p3 <- ggplot(o2_diff) +
-  geom_sf(data = namerica_state_wgs_df,
-          fill = NA, color = "grey10", size = 0.2) +
-  geom_point(aes(x = longitude, y = latitude, color = diff_o2),
-             size = 0.5, alpha = 0.7) +
-  ylab("Latitude") +
-  xlab("Longitude") +
-  xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
-  ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - MOM6", color = "ΔO2 (µmol/kg)") +
-  scale_color_gradient2(
-    low = "blue",
-    mid = "white",
-    high = "red",
-    midpoint = 0,
-    limits = c(-diff_range_anom, diff_range_anom)
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(size = 10))
-
-# Combine plots side by side with shared legend
-p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-```
-
-And then comparing the in situ to the nearest neighbor method.
-
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-
-# Second plot: MOM6 O2
-p2 <- ggplot(o2_by_location_nn) +
-  geom_sf(data = namerica_state_wgs_df,
-          fill = NA, color = "grey10", size = 0.2) +
-  geom_point(aes(x = longitude, y = latitude, color = mean_o2),
-             size = 0.5,
-             alpha = 0.6) +
-  ylab("Latitude") +
-  xlab("Longitude") +
-  xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
-  ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Mean MOM6 O2 Values") +
-  scale_color_viridis(option = "viridis", limits = o2_range_anom, name = "O2 (µmol/kg)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        plot.title = element_text(size = 10))
-
-# Third plot: Difference (MOM6 - In Situ)
-p3 <- ggplot(o2_diff_nn) +
-  geom_sf(data = namerica_state_wgs_df,
-          fill = NA, color = "grey10", size = 0.2) +
-  geom_point(aes(x = longitude, y = latitude, color = diff_o2),
-             size = 0.5, alpha = 0.7) +
-  ylab("Latitude") +
-  xlab("Longitude") +
-  xlim(min(nn$longitude, na.rm = TRUE), max(nn$longitude, na.rm = TRUE)) +
-  ylim(min(nn$latitude, na.rm = TRUE), max(nn$latitude, na.rm = TRUE)) +
-  labs(title = "Difference: In Situ - NN", color = "ΔO2 (µmol/kg)") +
-  scale_color_gradient2(
-    low = "blue",
-    mid = "white",
-    high = "red",
-    midpoint = 0,
-    limits = c(-diff_range_anom, diff_range_anom)
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(size = 10))
-
-# Combine plots side by side with shared legend
-p1 + p2 + p3 + plot_layout(guides = "collect") & theme(legend.position = "bottom")
-```
-
-## Confusion matrix 
+## Confusion matrix
 
 Thinking about this from a slightly different angle, let's simplify it to a binary scenario and calculate some evaluation metrics based on a confusion matrix. In this example we will label oxygen values less than hakes oxygen preference boundary (i.e., 119 µm/kg) as 1, and oxygen values greater than the preference boundary as 0.
 
@@ -1419,6 +1122,10 @@ We'll start by comparing in situ to the Indivero method first.
 #| echo: false
 #| message: false
 #| warning: false
+
+# remove rows with NAs in the nearest neighbor values to match sample size in all scenarios
+skill_preds_anom <- skill_preds
+skill_preds_anom <- skill_preds_anom[!is.na(skill_preds_anom$o2_nn_interp),]
 
 skill_preds_anom$o2_binary <- 0
 skill_preds_anom$o2_binary[skill_preds_anom$o2 <= 119] <- 1
@@ -1529,6 +1236,6 @@ And again, both our TSS and MCC values fall within the strong skill range sugges
 
 ## Conclusions
 
-Our evaluation indicates that the raw MOM6 output (i.e., the nearest neighbor method) is suitable for inclusion in the forecasting model. The nearest neighbor method consistently outperformed the Indivero method across all RMSE comparisons, reproduced temporal trends observed in the in situ data, and demonstrated strong predictive skill in the binary framework (TSS and MCC). RMSE values at the focal depths of the forecasting analysis were within an acceptable range (15–20; Indivero, pers. comm., 2025-08-22). While MOM6 tended to overestimate oxygen concentrations in shallower waters, these biases occurred primarily above the oxygen preference boundary, as reflected by the lower false-positive rate (n = 1369), and are unlikely to influence hake distribution. More importantly, however, MOM6 also overestimated oxygen at depths of \~100–200 m, where oxygen values may be lower than the preference boundary value, which could lead to localized overprediction of hake biomass in the forecast model.
+Our evaluation indicates that the regridded MOM6 output (i.e., the nearest neighbor method) is suitable for inclusion in the forecasting model. The nearest neighbor method consistently outperformed the Indivero method across all RMSE comparisons, reproduced temporal trends observed in the in situ data, and demonstrated strong predictive skill in the binary framework (TSS and MCC). RMSE values at the focal depths of the forecasting analysis were within an acceptable range (15–20; Indivero, pers. comm., 2025-08-22). While MOM6 tended to overestimate oxygen concentrations in shallower waters, these biases occurred primarily above the oxygen preference boundary, as reflected by the lower false-positive rate (n = 1369), and are unlikely to influence hake distribution. More importantly, however, MOM6 also overestimated oxygen at depths of \~100–200 m, where oxygen values may be lower than the preference boundary value, which could lead to localized overprediction of hake biomass in the forecast model.
 
 ## References

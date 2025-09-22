@@ -55,7 +55,7 @@ bbox <- st_bbox(c(xmin = -135, ymin = 30, xmax = -115, ymax = 55), crs = st_crs(
 map_cropped <- st_crop(map_data, bbox)
 us_coast_km <- map_cropped
 us_coast_km <- sf::st_transform(us_coast_km, crs = 32610)
-# conver to km
+# convert to km
 st_geometry(us_coast_km) <- st_geometry(us_coast_km) / 1000
 
 
@@ -76,10 +76,13 @@ dat$sigma0[dat$sigma0 <= minsigma0] <- minsigma0
 #Log depth
 dat$depth_ln <- log(dat$depth)
 
+# make month a factor
+dat$month <- factor(dat$month, levels = 6:9)
+
 #Save model outputs?
-savemodel=T
+savemodel=F
 #Plot models and save?
-plotmodel = T
+plotmodel = F
 
 
 #Scale?
@@ -136,6 +139,13 @@ plot_depth_response(mod = mod,
                     month_fixed = 2,
                     n = 250,
                     include_random_fields = FALSE)
+# Visualize the depth effect with ggeffects
+ggeffects::ggpredict(mod, "depth_ln [all]") |> plot()
+# Visualize depth effect with visreg: (see ?visreg_delta)
+visreg::visreg(mod, xvar = "depth_ln") # link space; randomized quantile residuals
+visreg::visreg(fit, xvar = "depth", scale = "response")
+visreg::visreg(fit, xvar = "depth", scale = "response", gg = TRUE, rug = FALSE)
+
 # save
 ggsave(paste0(root_dir, "output/plots/mom6_bc_cc_resp_curve_2011.pdf"))
 

@@ -203,6 +203,9 @@ mom6_fit <- function(dat,
     mom6 <- mom6[mom6$depth <= 500, ]
     # remove negative o2 values
     mom6 <- mom6[mom6$o2 >= 0, ]
+    # make month a factor
+    mom6$month <- factor(mom6$month, levels = 1:12)
+    
     
     # # only include survey months
     # mom6 <- mom6[mom6$month %in% unique(test_data$month), ]
@@ -261,7 +264,7 @@ mom6_fit <- function(dat,
     print("fitting model")
     m <- try(sdmTMB(formula = o2 ~ 1 + 
                       s(depth_ln, k = 3) +
-                      as.factor(month),
+                      month,
                     mesh = spde,
                     data = region_dat,
                     family = gaussian(),

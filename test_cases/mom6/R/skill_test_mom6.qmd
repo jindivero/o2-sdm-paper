@@ -2,7 +2,7 @@
 title: "Skill Testing MOM6 Oxygen"
 author: "Olivia Gemmell"
 date: "27 Aug 2025"
-format: html
+format: md # change to format: html to render as html
 references:
   - id: indivero2025
     type: article-journal
@@ -106,7 +106,7 @@ Next, we create region polygons and add NOAA bathymetry data for model fitting l
 # load regional polygons
 regions.hull <- readRDS(here::here("test_cases/mom6/data/regions_hull.rds"))
 # Map regions
-mapview(regions.hull)
+# mapview(regions.hull) # turn on if rendering as html
 
 ```
 
